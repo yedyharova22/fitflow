@@ -81,6 +81,8 @@ No deploy on PRs — only on merge to `main`.
 
 For FitFlow today, **VPS + GitHub Actions on `main`** is the simplest path that matches [`deploy.md`](./deploy.md).
 
+**Hands-on setup:** follow the step-by-step guide in [`deployment-setup-guide.md`](./deployment-setup-guide.md).
+
 ## Checklist before first auto-deploy
 
 - [ ] Server has Docker and repo cloned

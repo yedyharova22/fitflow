@@ -1,9 +1,5 @@
 # Deploy FitFlow to a VPS when main is updated.
-#
-# Required GitHub secrets:
-#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_PATH
-#
-# See docs/ci-cd.md
+# Skips until GitHub Actions secrets are configured (see docs/deployment-setup-guide.md).
 
 name: Deploy main
 
@@ -13,6 +9,7 @@ on:
 
 jobs:
   deploy:
+    if: ${{ secrets.DEPLOY_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH

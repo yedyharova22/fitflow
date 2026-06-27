@@ -52,6 +52,7 @@ fitflow/
 - [Git workflow](./docs/git-workflow.md) — feature branches + per-feature change logs
 - [Feature implementation logs](./docs/features-implementation/README.md)
 - [CI/CD & auto-deploy from main](./docs/ci-cd.md)
+- [**Auto-deployment setup guide (start here)**](./docs/deployment-setup-guide.md)
 - [Production deploy (manual)](./docs/deploy.md)
 
 ## Scripts

@@ -70,4 +70,5 @@ Update [`features-implementation/README.md`](./features-implementation/README.md
 - **Remote:** `git@github.com:yedyharova22/fitflow.git`
 - **Default branch:** `main`
 
-Automatic deployment from `main` is described in [`ci-cd.md`](./ci-cd.md).
+Automatic deployment from `main` is described in [`ci-cd.md`](./ci-cd.md).  
+**Step-by-step setup:** [`deployment-setup-guide.md`](./deployment-setup-guide.md).
