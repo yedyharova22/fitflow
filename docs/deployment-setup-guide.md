@@ -70,6 +70,8 @@ sudo usermod -aG docker $USER
 docker compose version
 ```
 
+**Hetzner tip:** If SSH with a password fails from your Mac, use the **Hetzner Cloud Console** (browser terminal) to log in as `root`. The Hetzner account password is not the same as the server root password — reset the root password in the Hetzner panel if needed.
+
 ### 1.3 Create a deploy user (recommended)
 
 ```bash
@@ -78,6 +80,20 @@ usermod -aG docker deploy
 mkdir -p /home/deploy/.ssh
 chmod 700 /home/deploy/.ssh
 ```
+
+### 1.4 Open firewall ports (Hetzner / cloud)
+
+For the first deploy without HTTPS, the browser must reach the app directly:
+
+| Port | Purpose |
+|------|---------|
+| 22 | SSH (GitHub Actions deploy) |
+| 3000 | Web (Next.js) |
+| 4000 | API (Express) |
+
+**Hetzner:** Cloud Console → your server → **Firewalls** (or **Networking**) → allow inbound TCP on 22, 3000, and 4000.
+
+Later, with a reverse proxy, you can close 3000/4000 publicly and expose only 80/443.
 
 ---
 
@@ -124,7 +140,20 @@ cat ~/.ssh/github_fitflow.pub
 
 Add that public key in GitHub: **Repo → Settings → Deploy keys → Add** (read-only is enough).
 
-Then:
+Configure SSH so `git clone` uses that key:
+
+```bash
+cat >> ~/.ssh/config << 'EOF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_fitflow
+  IdentitiesOnly yes
+EOF
+chmod 600 ~/.ssh/config
+```
+
+Then clone:
 
 ```bash
 git clone git@github.com:yedyharova22/fitflow.git
@@ -132,6 +161,8 @@ cd fitflow
 ```
 
 Path will be `/home/deploy/fitflow` — use this for `DEPLOY_PATH`.
+
+**Do not create `docker-compose.override.yml` on the server.** Production startup is handled by `docker-compose.prod.yml` and the API Dockerfile (see below).
 
 ---
 
@@ -143,7 +174,7 @@ cp .env.production.example .env
 nano .env   # or vim
 ```
 
-**Minimum values to set:**
+**Minimum values to set** (replace with your server IP):
 
 ```env
 POSTGRES_PASSWORD=your-strong-db-password
@@ -153,20 +184,46 @@ NEXT_PUBLIC_API_URL=http://YOUR_SERVER_IP:4000
 API_PUBLIC_URL=http://YOUR_SERVER_IP:4000
 ```
 
+Example with Hetzner IP `46.224.141.71`:
+
+```env
+CORS_ORIGIN=http://46.224.141.71:3000
+NEXT_PUBLIC_API_URL=http://46.224.141.71:4000
+API_PUBLIC_URL=http://46.224.141.71:4000
+```
+
 Later, when you have a domain:
 
 ```env
 CORS_ORIGIN=https://app.yourdomain.com
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+API_PUBLIC_URL=https://api.yourdomain.com
 ```
+
+### How the stack starts
+
+On `docker compose up`, five containers start:
+
+| Service | Role |
+|---------|------|
+| `postgres` | Database |
+| `redis` | Job queue (BullMQ) |
+| `api` | REST API — **runs `prisma db push` on startup**, then listens on port 4000 |
+| `worker` | Background jobs |
+| `web` | Next.js frontend |
+
+The API applies the database schema automatically (`prisma db push`). There are no Prisma migration files in this repo — you do **not** need to run migrations manually.
+
+The first build can take **5–15 minutes** on a small VPS (2–4 GB RAM).
 
 ### First manual deploy (verify before GitHub Actions)
 
 ```bash
+cd ~/fitflow
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Wait a few minutes for the build. Check:
+Wait for the build to finish, then check:
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
@@ -174,13 +231,23 @@ curl http://localhost:4000/health
 curl -I http://localhost:3000
 ```
 
-Open in browser: `http://YOUR_SERVER_IP:3000`
+**Healthy output looks like:**
 
-Optional seed:
+- `postgres`, `redis`, `web`, `api`, `worker` all show **Up** (not `Restarting`)
+- `curl http://localhost:4000/health` returns a JSON OK response
+- Browser: `http://YOUR_SERVER_IP:3000` loads the login page
+
+If `api` is **Restarting**, see [Troubleshooting → API container keeps restarting](#api-container-keeps-restarting-prisma-not-found).
+
+Optional — seed demo users and workouts:
 
 ```bash
 docker compose -f docker-compose.prod.yml exec api pnpm exec tsx prisma/seed.ts
 ```
+
+Demo logins (after seed): see [deploy.md](./deploy.md#smoke-test-after-seed).
+
+Open in browser: `http://YOUR_SERVER_IP:3000`
 
 ---
 
@@ -228,9 +295,13 @@ Watch: **GitHub → Actions tab**
 On the server after deploy:
 
 ```bash
+cd ~/fitflow
 docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs -f api --tail 50
+docker compose -f docker-compose.prod.yml logs api --tail 50
+curl http://localhost:4000/health
 ```
+
+Each push to `main` runs `git reset --hard origin/main` and `docker compose -f docker-compose.prod.yml up -d --build` — no extra compose override file is used.
 
 ---
 
@@ -264,31 +335,84 @@ Fix locally, push again.
 ### Deploy fails: "connection refused" / SSH
 
 - Check `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`
-- Test: `ssh -i ~/.ssh/fitflow_deploy deploy@HOST`
-- Server firewall must allow port 22 from GitHub Actions IPs (or temporarily open)
+- Test from your Mac: `ssh -i ~/.ssh/fitflow_deploy deploy@YOUR_SERVER_IP`
+- Server firewall must allow port 22 from the internet (GitHub Actions connects over SSH)
+- If Mac SSH fails but Hetzner console works, use the console to fix `authorized_keys` for the `deploy` user
 
 ### Deploy fails: docker permission denied
 
 ```bash
 sudo usermod -aG docker deploy
-# re-login
+# log out and back in (or open a new SSH session)
+```
+
+### API container keeps restarting (`prisma` not found)
+
+**Symptom:** `docker compose ps` shows `api` as `Restarting`. Logs show:
+
+```
+ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "prisma" not found
+```
+
+**Cause:** The API container runs `pnpm exec prisma db push` before starting. The `prisma` CLI must be installed as a **production** dependency. Older images had it only in devDependencies, which are omitted when `NODE_ENV=production`.
+
+**Fix:** Pull the latest `main` (includes the fix), remove any old workaround, rebuild:
+
+```bash
+cd ~/fitflow
+git pull origin main
+rm -f docker-compose.override.yml   # delete if you created one during debugging
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs api --tail 30
+curl http://localhost:4000/health
+```
+
+You should see log lines about Prisma applying the schema, then the API listening on port 4000.
+
+### API healthy but worker keeps restarting
+
+Check worker logs:
+
+```bash
+docker compose -f docker-compose.prod.yml logs worker --tail 50
+```
+
+Usually resolves once `postgres`, `redis`, and `api` are up and the schema exists. Rebuild if needed:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build worker
 ```
 
 ### Deploy succeeds but site unreachable
 
-- Open ports 3000 and 4000 in cloud firewall, or use reverse proxy on 80/443
+- Open ports **3000** and **4000** in your cloud firewall (Hetzner Firewalls / security groups)
 - Check containers: `docker compose -f docker-compose.prod.yml ps`
+- Test from the server first: `curl http://localhost:3000` and `curl http://localhost:4000/health`
 
-### Web loads but API errors
+### Web loads but API errors (CORS / network)
 
-- `NEXT_PUBLIC_API_URL` must match what the browser uses to reach the API
-- `CORS_ORIGIN` must match the web URL exactly
-- Rebuild web after changing `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_API_URL` must match what the **browser** uses to reach the API (e.g. `http://46.224.141.71:4000`, not `localhost`)
+- `CORS_ORIGIN` must match the web URL **exactly** (including `http://` and port)
+- Rebuild **web** after changing `NEXT_PUBLIC_API_URL` (it is baked in at build time):
+
+  ```bash
+  docker compose -f docker-compose.prod.yml up -d --build web
+  ```
 
 ### Deploy workflow does not run
 
 - Secret `DEPLOY_HOST` must be non-empty
 - Workflow only runs on pushes to `main`
+
+### Updating the server after a code fix
+
+```bash
+cd ~/fitflow
+git pull origin main
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Or push to `main` and let GitHub Actions deploy automatically (once secrets are set).
 
 ---
 
@@ -298,6 +422,7 @@ sudo usermod -aG docker deploy
 |------|----------|
 | Workflows | `.github/workflows/ci.yml`, `deploy-main.yml` |
 | Production compose | `docker-compose.prod.yml` |
+| API startup (schema) | `apps/api/Dockerfile` — `prisma db push` then `node dist/index.js` |
 | Env template | `.env.production.example` |
 | Manual deploy details | [deploy.md](./deploy.md) |
 | Git / feature workflow | [git-workflow.md](./git-workflow.md) |
@@ -307,11 +432,15 @@ sudo usermod -aG docker deploy
 ## Checklist
 
 - [ ] VPS created with Docker installed
+- [ ] Firewall allows ports 22, 3000, 4000 (or 80/443 with reverse proxy)
 - [ ] `deploy` user in `docker` group
 - [ ] SSH deploy key: Mac → GitHub secret + server `authorized_keys`
-- [ ] Repo cloned on server at known path
-- [ ] `.env` configured on server
+- [ ] GitHub deploy key for `git clone` on server (`~/.ssh/config` for `github.com`)
+- [ ] Repo cloned on server at `/home/deploy/fitflow`
+- [ ] `.env` configured (IP-based URLs before domain)
 - [ ] Manual `docker compose -f docker-compose.prod.yml up -d --build` works
-- [ ] Four GitHub secrets set
-- [ ] Push to `main` → both Actions green
-- [ ] App opens in browser
+- [ ] All five containers **Up**; `curl localhost:4000/health` OK
+- [ ] (Optional) Demo data seeded
+- [ ] Four GitHub secrets set (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`)
+- [ ] Push to `main` → CI and Deploy Actions green
+- [ ] App opens in browser at `http://YOUR_SERVER_IP:3000`

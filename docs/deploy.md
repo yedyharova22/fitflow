@@ -34,7 +34,7 @@ FitFlow runs as a Docker Compose stack: PostgreSQL, Redis, API, BullMQ worker, a
    docker compose -f docker-compose.prod.yml exec api pnpm exec tsx prisma/seed.ts
    ```
 
-The API container runs `prisma migrate deploy` on startup before listening on port 4000.
+The API container runs `prisma db push` on startup (applies the schema; no migration files required) before listening on port 4000.
 
 ## Services
 

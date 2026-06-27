@@ -18,6 +18,7 @@ RUN pnpm --filter @fitflow/api exec prisma generate
 RUN pnpm --filter @fitflow/api build
 
 FROM node:20-alpine AS runner
+RUN apk add --no-cache wget
 RUN corepack enable
 WORKDIR /app
 ENV NODE_ENV=production
@@ -36,4 +37,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://localhost:4000/health || exit 1
 
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "pnpm exec prisma db push --skip-generate && node dist/index.js"]
