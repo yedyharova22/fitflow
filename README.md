@@ -49,6 +49,10 @@ fitflow/
 - [Architecture Plan](./docs/architecture-plan.md)
 - [Database Design](./docs/database-design.md)
 - [Implementation Notes](./docs/implementation-notes.md)
+- [Git workflow](./docs/git-workflow.md) — feature branches + per-feature change logs
+- [Feature implementation logs](./docs/features-implementation/README.md)
+- [CI/CD & auto-deploy from main](./docs/ci-cd.md)
+- [Production deploy (manual)](./docs/deploy.md)
 
 ## Scripts
 
