@@ -597,6 +597,34 @@ docker compose -f docker-compose.prod.yml up -d --build worker
   docker compose -f docker-compose.prod.yml up -d --build web
   ```
 
+### Docker build stuck at `next build` / workflow canceled
+
+On a **4 GB Hetzner VPS**, the Next.js build step can sit on `Creating an optimized production build ...` for **10–20 minutes** with no new log lines. That is normal — **do not cancel** unless it has been stuck for 30+ minutes.
+
+If builds fail or hang forever, the server likely ran **out of memory**. Add swap once (Hetzner console as root):
+
+```bash
+fallocate -l 4G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+free -h
+```
+
+Build manually one service at a time (SSH to server):
+
+```bash
+cd ~/fitflow
+git pull origin main
+docker compose -f docker-compose.prod.yml build api
+docker compose -f docker-compose.prod.yml build worker
+docker compose -f docker-compose.prod.yml build web    # slowest — wait 10–20 min
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Watch memory while building: `htop` or `free -h` in another terminal.
+
 ### Deploy workflow does not run (only CI / typecheck visible)
 
 1. Go to **Settings → Secrets and variables → Actions** — confirm all **four** secrets exist

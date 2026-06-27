@@ -16,6 +16,7 @@ COPY apps/web apps/web
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 RUN pnpm --filter @fitflow/shared build
 RUN pnpm --filter @fitflow/web build
