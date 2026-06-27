@@ -31,6 +31,8 @@ COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY apps/api/docker-entrypoint.sh ./apps/api/docker-entrypoint.sh
+RUN chmod +x ./apps/api/docker-entrypoint.sh
 
 WORKDIR /app
 EXPOSE 4000
@@ -38,4 +40,4 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://localhost:4000/health || exit 1
 
-CMD ["sh", "-c", "pnpm --filter @fitflow/api exec prisma db push --skip-generate && node apps/api/dist/index.js"]
+ENTRYPOINT ["./apps/api/docker-entrypoint.sh"]
