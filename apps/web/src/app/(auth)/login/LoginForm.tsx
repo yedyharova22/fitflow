@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Box,
@@ -19,26 +19,20 @@ import { getDeviceId } from '@/lib/device-id';
 
 export default function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated, setSession } = useAuth();
+  const { setSession, isLoading: authLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace(Routes.DASHBOARD);
-    }
-  }, [isAuthenticated, router, searchParams]);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const deviceId = getDeviceId() || undefined;
+
+    setIsLoading(true);
+    setError(null);
 
     try {
       const result = await login({ email, password, deviceId });
@@ -51,6 +45,8 @@ export default function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  const submitting = isLoading || authLoading;
 
   return (
     <Box
@@ -90,6 +86,7 @@ export default function LoginForm() {
             required
             margin="normal"
             autoComplete="email"
+            disabled={submitting}
           />
 
           <TextField
@@ -101,6 +98,7 @@ export default function LoginForm() {
             required
             margin="normal"
             autoComplete="current-password"
+            disabled={submitting}
           />
 
           <Button
@@ -108,10 +106,10 @@ export default function LoginForm() {
             fullWidth
             variant="contained"
             size="large"
-            disabled={isLoading}
+            disabled={submitting}
             sx={{ mt: 3, mb: 2 }}
           >
-            {isLoading ? <CircularProgress size={24} /> : 'Sign in'}
+            {submitting ? <CircularProgress size={24} /> : 'Sign in'}
           </Button>
 
           <Box sx={{ textAlign: 'center' }}>

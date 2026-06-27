@@ -65,7 +65,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     clearSession();
     try {
-      await logoutApi();
+      if (!isPublicPath(pathnameRef.current)) {
+        await logoutApi();
+      }
     } catch {
       // Cookies may already be cleared by the API.
     }

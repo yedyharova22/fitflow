@@ -43,7 +43,7 @@ export function setAuthFailureHandler(handler: AuthFailureHandler): void {
   onAuthFailure = handler;
 }
 
-export async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(options?: { notifyAuthFailure?: boolean }): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const response = await fetch(`${API_URL}/v1/auth/refresh`, {
@@ -54,7 +54,9 @@ export async function refreshAccessToken(): Promise<string> {
       });
 
       if (!response.ok) {
-        onAuthFailure();
+        if (options?.notifyAuthFailure !== false) {
+          onAuthFailure();
+        }
         throw new ApiClientError(response.status, 'Refresh failed');
       }
 
@@ -70,7 +72,13 @@ export async function refreshAccessToken(): Promise<string> {
 }
 
 function isAuthPath(path: string): boolean {
-  return path.startsWith('/v1/auth/device') || path.startsWith('/v1/auth/refresh');
+  return (
+    path.startsWith('/v1/auth/device') ||
+    path.startsWith('/v1/auth/refresh') ||
+    path.startsWith('/v1/auth/login') ||
+    path.startsWith('/v1/auth/register') ||
+    path.startsWith('/v1/auth/logout')
+  );
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {

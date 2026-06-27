@@ -38,7 +38,7 @@ export function getMe(): Promise<{ user: DeviceAuthResponse['user'] }> {
 }
 
 export function refreshSession(): Promise<RefreshResponse> {
-  return refreshAccessToken().then((accessToken) => ({ accessToken }));
+  return refreshAccessToken({ notifyAuthFailure: false }).then((accessToken) => ({ accessToken }));
 }
 
 /** Restores session from httpOnly refresh cookie; token is set before /me is called. */
