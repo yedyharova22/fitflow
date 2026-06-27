@@ -9,4 +9,5 @@ if [ -z "$PRISMA_BIN" ]; then
 fi
 
 node "$PRISMA_BIN" db push --skip-generate --schema /app/apps/api/prisma/schema.prisma
-exec node /app/apps/api/dist/index.js
+cd /app/apps/api
+exec node dist/index.js
