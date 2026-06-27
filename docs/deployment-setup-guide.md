@@ -429,16 +429,21 @@ Click **New repository secret** for each:
 |-------------|-------|---------|
 | `DEPLOY_HOST` | Server IP or hostname | `123.45.67.89` |
 | `DEPLOY_USER` | SSH user | `deploy` |
-| `DEPLOY_SSH_KEY` | **Full private key** contents of `~/.ssh/fitflow_deploy` | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `DEPLOY_SSH_KEY` | **Full private key** from your **Mac** (`~/.ssh/fitflow_deploy`) | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
 | `DEPLOY_PATH` | Absolute path to repo on server | `/home/deploy/fitflow` |
 
-Copy private key:
+> **Mac vs server:** `fitflow_deploy` is created on your **Mac** in Part 2. It does **not** exist on the server.  
+> The server only stores the matching **public** key in `/home/deploy/.ssh/authorized_keys`.
+
+**On your Mac** (not on the server), copy the private key for GitHub:
 
 ```bash
 cat ~/.ssh/fitflow_deploy
 ```
 
-Paste everything including `BEGIN` / `END` lines.
+Paste everything including `BEGIN` / `END` lines into the `DEPLOY_SSH_KEY` secret.
+
+**On the server**, the GitHub **clone** key is different — see Part 3 (`github_fitflow`):
 
 ---
 
