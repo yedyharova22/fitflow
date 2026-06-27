@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "FitFlow",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "workouts": "Workouts",
+    "bookings": "Bookings",
+    "profile": "Profile",
+    "discover": "Discover"
+  },
+  "home": {
+    "title": "Welcome to FitFlow",
+    "subtitle": "Find workouts, book sessions, track your progress",
+    "getStarted": "Get Started"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "recoverAccount": "Recover Account",
+    "deviceAuth": "Signing in with this device...",
+    "recoverDescription": "Enter the email linked to your account. We will send a one-time code.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sendOtp": "Send code",
+    "sendingOtp": "Sending code...",
+    "otpLabel": "Verification code",
+    "otpSent": "Enter the 6-digit code sent to {email}",
+    "verifyOtp": "Verify and sign in",
+    "verifyingOtp": "Verifying...",
+    "changeEmail": "Use a different email",
+    "recoverError": "Recovery failed. Please try again.",
+    "deviceUnavailable": "Device ID unavailable",
+    "signedInAs": "Signed in as",
+    "anonymousUser": "User"
+  },
+  "bookings": {
+    "title": "My Bookings",
+    "pending": "Pending",
+    "approved": "Approved",
+    "canceled": "Canceled",
+    "noBookings": "No bookings yet"
+  },
+  "workouts": {
+    "title": "Workouts",
+    "search": "Search workouts...",
+    "noWorkouts": "No workouts found"
+  },
+  "locale": {
+    "switch": "Language",
+    "en": "English",
+    "uk": "Ukrainian"
+  }
+}

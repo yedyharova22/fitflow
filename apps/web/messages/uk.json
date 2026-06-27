@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "FitFlow",
+    "loading": "Завантаження...",
+    "error": "Щось пішло не так",
+    "retry": "Повторити",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "back": "Назад"
+  },
+  "nav": {
+    "home": "Головна",
+    "workouts": "Тренування",
+    "bookings": "Записи",
+    "profile": "Профіль",
+    "discover": "Пошук"
+  },
+  "home": {
+    "title": "Ласкаво просимо до FitFlow",
+    "subtitle": "Знаходьте тренування, записуйтесь на заняття, відстежуйте прогрес",
+    "getStarted": "Почати"
+  },
+  "auth": {
+    "signIn": "Увійти",
+    "signUp": "Зареєструватись",
+    "recoverAccount": "Відновити акаунт",
+    "deviceAuth": "Вхід з цього пристрою...",
+    "recoverDescription": "Введіть email, прив'язаний до вашого акаунта. Ми надішлемо одноразовий код.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sendOtp": "Надіслати код",
+    "sendingOtp": "Надсилання коду...",
+    "otpLabel": "Код підтвердження",
+    "otpSent": "Введіть 6-значний код, надісланий на {email}",
+    "verifyOtp": "Підтвердити та увійти",
+    "verifyingOtp": "Перевірка...",
+    "changeEmail": "Інший email",
+    "recoverError": "Не вдалося відновити акаунт. Спробуйте ще раз.",
+    "deviceUnavailable": "ID пристрою недоступний",
+    "signedInAs": "Ви увійшли як",
+    "anonymousUser": "Користувач"
+  },
+  "bookings": {
+    "title": "Мої записи",
+    "pending": "Очікує",
+    "approved": "Підтверджено",
+    "canceled": "Скасовано",
+    "noBookings": "Записів поки немає"
+  },
+  "workouts": {
+    "title": "Тренування",
+    "search": "Пошук тренувань...",
+    "noWorkouts": "Тренувань не знайдено"
+  },
+  "locale": {
+    "switch": "Мова",
+    "en": "English",
+    "uk": "Українська"
+  }
+}

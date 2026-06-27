@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+
+# PWA generated files
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/workbox-*.js
+apps/web/public/workbox-*.js.map
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker volumes (local)
+fitflow_pg_data/
+fitflow_redis_data/
+
+# Local avatar uploads (dev fallback)
+uploads/

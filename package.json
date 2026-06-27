@@ -1,0 +1,30 @@
+{
+  "name": "fitflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fitness management platform — coaches manage workouts, clients book and attend",
+  "scripts": {
+    "dev": "concurrently -n web,api,worker -c blue,green,yellow \"pnpm dev:web\" \"pnpm dev:api\" \"pnpm dev:worker\"",
+    "dev:web": "pnpm --filter @fitflow/web dev",
+    "dev:api": "pnpm --filter @fitflow/api dev",
+    "dev:worker": "pnpm --filter @fitflow/worker dev",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @fitflow/web build",
+    "build:api": "pnpm --filter @fitflow/api build",
+    "db:generate": "pnpm --filter @fitflow/api db:generate",
+    "db:push": "pnpm --filter @fitflow/api db:push",
+    "db:migrate": "pnpm --filter @fitflow/api db:migrate",
+    "db:seed": "pnpm --filter @fitflow/api db:seed",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

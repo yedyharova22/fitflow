@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fitflow}
+      POSTGRES_DB: ${POSTGRES_DB:-fitflow}
+    volumes:
+      - fitflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-fitflow} -d ${POSTGRES_DB:-fitflow}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - fitflow_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fitflow}:${POSTGRES_PASSWORD:-fitflow}@postgres:5432/${POSTGRES_DB:-fitflow}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@fitflow.dev}
+    ports:
+      - '${API_PORT:-4000}:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fitflow}:${POSTGRES_PASSWORD:-fitflow}@postgres:5432/${POSTGRES_DB:-fitflow}
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  fitflow_pg_data:
+  fitflow_redis_data:

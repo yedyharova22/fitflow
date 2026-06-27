@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COACH
+  CLIENT
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  CANCELED
+}
+
+enum WorkoutInstanceStatus {
+  SCHEDULED
+  CANCELED
+  COMPLETED
+}
+
+enum NotificationType {
+  BOOKING_REQUEST
+  BOOKING_APPROVED
+  BOOKING_REJECTED
+  BOOKING_CANCELED
+  SCHEDULE_CHANGED
+  WORKOUT_CANCELED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  role         UserRole @default(CLIENT)
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String?
+  coachId      String?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile            Profile?
+  deviceTokens       DeviceToken[]
+  refreshTokens      RefreshToken[]
+  workouts           Workout[]            @relation("CoachWorkouts")
+  bookings           Booking[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
+  coachSubscriptions CoachSubscription[]  @relation("ClientSubscriptions")
+  subscribers        CoachSubscription[]  @relation("CoachSubscribers")
+  coach              User?                @relation("CoachClients", fields: [coachId], references: [id])
+  clients            User[]               @relation("CoachClients")
+
+  @@index([role, latitude, longitude])
+  @@index([coachId])
+}
+
+model Profile {
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  name        String
+  avatarUrl   String?
+  age         Int?
+  description String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DeviceToken {
+  id         String   @id @default(uuid())
+  deviceId   String   @unique
+  userId     String
+  userAgent  String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Workout {
+  id             String   @id @default(uuid())
+  coachId        String
+  title          String
+  description    String?
+  location       String?
+  latitude       Float?
+  longitude      Float?
+  startAt        DateTime
+  recurrenceRule Json?
+  maxCapacity    Int?
+  isActive       Boolean  @default(true)
+  shareCode      String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  coach     User              @relation("CoachWorkouts", fields: [coachId], references: [id], onDelete: Cascade)
+  instances WorkoutInstance[]
+
+  @@index([coachId, startAt])
+}
+
+model WorkoutInstance {
+  id          String                @id @default(uuid())
+  workoutId   String
+  scheduledAt DateTime
+  status      WorkoutInstanceStatus @default(SCHEDULED)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  workout  Workout   @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([workoutId, scheduledAt])
+  @@index([scheduledAt])
+  @@index([workoutId, scheduledAt])
+}
+
+model Booking {
+  id                String        @id @default(uuid())
+  clientId          String
+  workoutInstanceId String
+  status            BookingStatus @default(PENDING)
+  attendedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  client          User            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  workoutInstance WorkoutInstance @relation(fields: [workoutInstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, workoutInstanceId])
+  @@index([clientId, status, createdAt(sort: Desc)])
+}
+
+model CoachSubscription {
+  id        String   @id @default(uuid())
+  clientId  String
+  coachId   String
+  createdAt DateTime @default(now())
+
+  client User @relation("ClientSubscriptions", fields: [clientId], references: [id], onDelete: Cascade)
+  coach  User @relation("CoachSubscribers", fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, coachId])
+  @@index([coachId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
