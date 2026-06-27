@@ -423,14 +423,17 @@ Open in browser: `http://YOUR_SERVER_IP:3000`
 
 In GitHub: **https://github.com/yedyharova22/fitflow/settings/secrets/actions**
 
-Click **New repository secret** for each:
+Click **New repository secret** for each of the **four** secrets below.  
+If any are missing, you will only see the **CI / typecheck** workflow — **Deploy main** either won't appear or will show as skipped.
 
-| Secret name | Value | Example |
-|-------------|-------|---------|
-| `DEPLOY_HOST` | Server IP or hostname | `123.45.67.89` |
+| Secret name | Value | Your server |
+|-------------|-------|-------------|
+| `DEPLOY_HOST` | Server IP | `46.224.141.71` |
 | `DEPLOY_USER` | SSH user | `deploy` |
-| `DEPLOY_SSH_KEY` | **Full private key** from your **Mac** (`~/.ssh/fitflow_deploy`) | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `DEPLOY_PATH` | Absolute path to repo on server | `/home/deploy/fitflow` |
+| `DEPLOY_SSH_KEY` | **Full private key** from your **Mac** | see below |
+| `DEPLOY_PATH` | Repo path on server | `/home/deploy/fitflow` |
+
+> **`DEPLOY_HOST` is required.** Without it, deploy never runs — only CI typecheck runs.
 
 > **Mac vs server:** `fitflow_deploy` is created on your **Mac** in Part 2. It does **not** exist on the server.  
 > The server only stores the matching **public** key in `/home/deploy/.ssh/authorized_keys`.
@@ -443,7 +446,16 @@ cat ~/.ssh/fitflow_deploy
 
 Paste everything including `BEGIN` / `END` lines into the `DEPLOY_SSH_KEY` secret.
 
-**On the server**, the GitHub **clone** key is different — see Part 3 (`github_fitflow`):
+**On the server**, the GitHub **clone** key is different — see Part 3 (`github_fitflow`).
+
+### Verify secrets are saved
+
+GitHub → **Settings → Secrets and variables → Actions** — you should see **4 secrets** listed (names only, not values):
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_SSH_KEY`
+- `DEPLOY_PATH`
 
 ---
 
@@ -462,8 +474,24 @@ git push origin main
 
 Watch: **GitHub → Actions tab**
 
-- **CI / typecheck** — should pass (green)
-- **Deploy main / deploy** — should SSH and rebuild (green)
+You should see **two** workflows after each push to `main`:
+
+| Workflow | What it means |
+|----------|----------------|
+| **CI / typecheck** | Code checks — should be green |
+| **Deploy main / deploy** | SSH deploy — green when secrets are set and deploy succeeds |
+
+If you only see **CI**, either:
+
+- Secrets are not all set (most often missing `DEPLOY_HOST`), or
+- Open the **Deploy main** run — it may show **skipped** with a notice until secrets exist
+
+After saving all four secrets, trigger deploy again:
+
+```bash
+git commit --allow-empty -m "Trigger deploy"
+git push origin main
+```
 
 On the server after deploy:
 
@@ -572,10 +600,13 @@ docker compose -f docker-compose.prod.yml up -d --build worker
   docker compose -f docker-compose.prod.yml up -d --build web
   ```
 
-### Deploy workflow does not run
+### Deploy workflow does not run (only CI / typecheck visible)
 
-- Secret `DEPLOY_HOST` must be non-empty
-- Workflow only runs on pushes to `main`
+1. Go to **Settings → Secrets and variables → Actions** — confirm all **four** secrets exist
+2. Most common miss: **`DEPLOY_HOST`** not created (deploy is skipped without it)
+3. `DEPLOY_SSH_KEY` must be copied from your **Mac** (`cat ~/.ssh/fitflow_deploy`), not from the server
+4. After adding secrets, push again to `main` — workflows do not re-run for past commits
+5. In **Actions**, check the left sidebar for **Deploy main** (separate from **CI**)
 
 ### Updating the server after a code fix
 

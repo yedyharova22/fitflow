@@ -9,10 +9,16 @@ on:
 
 jobs:
   deploy:
-    if: ${{ secrets.DEPLOY_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip deploy until secrets are configured
+        if: ${{ secrets.DEPLOY_HOST == '' }}
+        run: |
+          echo "::notice title=Deploy skipped::Add repository secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, and DEPLOY_PATH (see docs/deployment-setup-guide.md Part 5)."
+          exit 0
+
       - name: Deploy via SSH
+        if: ${{ secrets.DEPLOY_HOST != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
