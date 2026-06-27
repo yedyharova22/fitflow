@@ -47,7 +47,7 @@ Optional: store production `.env` on the server only (never commit). The workflo
 
 ### Workflow file
 
-[`.github/workflows/deploy-main.yml`](../.github/workflows/deploy-main.yml) runs on every push to `main`:
+[`.github/workflows/deploy-dev.yml`](../.github/workflows/deploy-dev.yml) runs on every push to `main`:
 
 1. SSH into the server
 2. `git pull origin main`

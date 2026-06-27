@@ -1,7 +1,7 @@
-# Deploy FitFlow to a VPS when main is updated.
-# Skips until GitHub Actions secrets are configured (see docs/deployment-setup-guide.md).
+# Deploy FitFlow dev server when main is updated.
+# Requires GitHub Actions secrets (see docs/deployment-setup-guide.md Part 5).
 
-name: Deploy main
+name: Deploy dev
 
 on:
   push:
@@ -11,14 +11,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Skip deploy until secrets are configured
-        if: ${{ secrets.DEPLOY_HOST == '' }}
-        run: |
-          echo "::notice title=Deploy skipped::Add repository secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, and DEPLOY_PATH (see docs/deployment-setup-guide.md Part 5)."
-          exit 0
-
-      - name: Deploy via SSH
-        if: ${{ secrets.DEPLOY_HOST != '' }}
+      - name: Deploy to dev server via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}

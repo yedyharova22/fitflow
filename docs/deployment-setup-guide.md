@@ -10,7 +10,7 @@ After each push to `main`, two workflows run:
 | Workflow | File | What it does | When it fails |
 |----------|------|--------------|----------------|
 | **CI / typecheck** | `.github/workflows/ci.yml` | Installs deps, builds shared, runs `pnpm typecheck` | Code/type errors |
-| **Deploy main / deploy** | `.github/workflows/deploy-main.yml` | SSH to your server, `git pull`, `docker compose up --build` | Secrets missing, SSH/Docker/server issues |
+| **Deploy dev / deploy** | `.github/workflows/deploy-dev.yml` | SSH to your dev server, `git pull`, `docker compose up --build` | Secrets missing, SSH/Docker/server issues |
 
 **Deploy is skipped** until you add the `DEPLOY_HOST` secret (so you won't see a red deploy while setting up).
 
@@ -424,7 +424,7 @@ Open in browser: `http://YOUR_SERVER_IP:3000`
 In GitHub: **https://github.com/yedyharova22/fitflow/settings/secrets/actions**
 
 Click **New repository secret** for each of the **four** secrets below.  
-If any are missing, you will only see the **CI / typecheck** workflow — **Deploy main** either won't appear or will show as skipped.
+If any are missing, **Deploy dev** will fail until secrets are configured (you will still see **CI / typecheck** run separately).
 
 | Secret name | Value | Your server |
 |-------------|-------|-------------|
@@ -479,12 +479,9 @@ You should see **two** workflows after each push to `main`:
 | Workflow | What it means |
 |----------|----------------|
 | **CI / typecheck** | Code checks — should be green |
-| **Deploy main / deploy** | SSH deploy — green when secrets are set and deploy succeeds |
+| **Deploy dev / deploy** | SSH deploy to Hetzner dev server — green when secrets are set and deploy succeeds |
 
-If you only see **CI**, either:
-
-- Secrets are not all set (most often missing `DEPLOY_HOST`), or
-- Open the **Deploy main** run — it may show **skipped** with a notice until secrets exist
+If **Deploy dev** fails with SSH errors, check the four secrets in Part 5.
 
 After saving all four secrets, trigger deploy again:
 
@@ -606,7 +603,7 @@ docker compose -f docker-compose.prod.yml up -d --build worker
 2. Most common miss: **`DEPLOY_HOST`** not created (deploy is skipped without it)
 3. `DEPLOY_SSH_KEY` must be copied from your **Mac** (`cat ~/.ssh/fitflow_deploy`), not from the server
 4. After adding secrets, push again to `main` — workflows do not re-run for past commits
-5. In **Actions**, check the left sidebar for **Deploy main** (separate from **CI**)
+5. In **Actions**, check the left sidebar for **Deploy dev** (separate from **CI**)
 
 ### Updating the server after a code fix
 
@@ -624,7 +621,7 @@ Or push to `main` and let GitHub Actions deploy automatically (once secrets are 
 
 | Item | Location |
 |------|----------|
-| Workflows | `.github/workflows/ci.yml`, `deploy-main.yml` |
+| Workflows | `.github/workflows/ci.yml`, `deploy-dev.yml` |
 | Production compose | `docker-compose.prod.yml` |
 | API startup (schema) | `apps/api/Dockerfile` — `prisma db push` then `node dist/index.js` |
 | Env template | `.env.production.example` |
