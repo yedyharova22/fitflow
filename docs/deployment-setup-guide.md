@@ -124,6 +124,174 @@ Test login:
 ssh -i ~/.ssh/fitflow_deploy deploy@YOUR_SERVER_IP
 ```
 
+### 2.1 Enable SSH from your Mac (step by step)
+
+`ssh-copy-id` only works if you can already log in. Use the **Hetzner browser console** first, then Mac SSH will work without a password.
+
+> **Filename trap:** SSH only reads `authorized_keys` (underscore `_`).  
+> A file named `authorized-keys` (hyphen `-`) is **ignored** and will not work.
+
+> **Hetzner console paste:** Copy-paste often breaks in the browser terminal. Prefer the **full reset script** in [2.2](#22-fresh-start--reset-all-ssh-keys) — one paste, key already embedded.
+
+**Step 1 — On your Mac: confirm the key exists**
+
+```bash
+ls -la ~/.ssh/fitflow_deploy ~/.ssh/fitflow_deploy.pub
+cat ~/.ssh/fitflow_deploy.pub
+```
+
+You should see one line starting with `ssh-ed25519`. Copy that entire line.
+
+If the files are missing, create them:
+
+```bash
+ssh-keygen -t ed25519 -C "fitflow-github-deploy" -f ~/.ssh/fitflow_deploy -N ""
+cat ~/.ssh/fitflow_deploy.pub
+```
+
+**Step 2 — Open Hetzner browser console**
+
+1. Go to [console.hetzner.cloud](https://console.hetzner.cloud)
+2. Click your project → your server (`ubuntu-4gb-fsn1-1`)
+3. Click **Console** (top right) — a terminal opens in the browser
+4. Log in as **`root`** (reset root password in Hetzner panel if needed)
+
+**Step 3 — On the server (browser console): install your Mac's public key**
+
+Replace `PASTE_YOUR_PUBLIC_KEY_LINE_HERE` with the line from Step 1:
+
+```bash
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+nano /home/deploy/.ssh/authorized_keys
+```
+
+Paste your public key as **one line**, save (`Ctrl+O`, Enter, `Ctrl+X`), then:
+
+```bash
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
+```
+
+One-liner alternative (paste your real key instead of the example):
+
+```bash
+mkdir -p /home/deploy/.ssh && chmod 700 /home/deploy/.ssh
+echo "ssh-ed25519 AAAA...your-key... fitflow-github-deploy" >> /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
+```
+
+**Step 4 — On your Mac: optional SSH config (so you don't need `-i` every time)**
+
+If you already have `~/.ssh/config`, add a **blank line** before the new block (do not append directly after another `IdentityFile` line):
+
+```bash
+cat >> ~/.ssh/config << 'EOF'
+
+Host fitflow
+  HostName 46.224.141.71
+  User deploy
+  IdentityFile ~/.ssh/fitflow_deploy
+  IdentitiesOnly yes
+EOF
+chmod 600 ~/.ssh/config
+```
+
+The leading blank line in the heredoc is required so the new `Host fitflow` block does not merge with the previous line.
+
+**Step 5 — On your Mac: test login**
+
+```bash
+ssh -i ~/.ssh/fitflow_deploy deploy@46.224.141.71
+```
+
+Or, if you added the config:
+
+```bash
+ssh fitflow
+```
+
+You should land on the server **without** a password prompt. Success looks like:
+
+```text
+deploy@ubuntu-4gb-fsn1-1:~$
+```
+
+**Step 6 — Deploy / update the app from Mac**
+
+```bash
+cd ~/fitflow
+git pull origin main
+rm -f docker-compose.override.yml
+docker compose -f docker-compose.prod.yml up -d --build
+curl http://localhost:4000/health
+```
+
+**If it still asks for a password**
+
+- Wrong filename — must be `authorized_keys` with an **underscore**, not `authorized-keys`
+- Wrong key on server — the line must match `cat ~/.ssh/fitflow_deploy.pub` exactly
+- Wrong user — use `deploy`, not `root`
+- Port 22 blocked — in Hetzner, allow inbound TCP 22 on the server firewall
+
+### 2.2 Fresh start — reset all SSH keys
+
+Use this when keys are mixed up, paste failed, or you have stray files like `authorized-keys`.
+
+**A) On your Mac — delete old keys and create new ones**
+
+```bash
+rm -f ~/.ssh/fitflow_deploy ~/.ssh/fitflow_deploy.pub
+ssh-keygen -t ed25519 -C "fitflow-deploy" -f ~/.ssh/fitflow_deploy -N ""
+cat ~/.ssh/fitflow_deploy.pub
+ssh-keygen -lf ~/.ssh/fitflow_deploy.pub
+```
+
+**B) On your Mac — encode the public key (paste-friendly for Hetzner console)**
+
+```bash
+cat ~/.ssh/fitflow_deploy.pub | base64
+```
+
+Copy the **single line** of base64 output.
+
+**C) On the server — Hetzner console as `root`**
+
+Paste this whole block, then replace `PASTE_BASE64_LINE_HERE` with the base64 from step B:
+
+```bash
+rm -rf /home/deploy/.ssh
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+echo "PASTE_BASE64_LINE_HERE" | base64 -d > /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
+chown deploy:deploy /home/deploy
+chmod 755 /home/deploy
+ssh-keygen -lf /home/deploy/.ssh/authorized_keys
+ls -la /home/deploy/.ssh/
+```
+
+You must see exactly **one** file: `authorized_keys` (underscore).  
+The fingerprint from the last command must match step A on your Mac.
+
+**D) On your Mac — test**
+
+```bash
+ssh fitflow
+```
+
+**E) Update GitHub Actions secret**
+
+GitHub → repo → **Settings → Secrets → Actions** → edit `DEPLOY_SSH_KEY`:
+
+```bash
+cat ~/.ssh/fitflow_deploy
+```
+
+Paste the **full private key** (including `BEGIN` / `END` lines). Auto-deploy uses this key.
+
 ---
 
 ## Part 3 — Clone repo on the server

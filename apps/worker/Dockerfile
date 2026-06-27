@@ -20,7 +20,8 @@ RUN pnpm --filter @fitflow/worker exec prisma generate --schema ../api/prisma/sc
 RUN pnpm --filter @fitflow/worker build
 
 FROM node:20-alpine AS runner
-RUN corepack enable
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
 ENV NODE_ENV=production
 
